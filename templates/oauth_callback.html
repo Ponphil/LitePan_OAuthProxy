@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OAuth授权结果</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; }
+        .success { color: #28a745; }
+        .error { color: #dc3545; }
+        .token-box { background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 5px; padding: 15px; margin: 10px 0; }
+        .token-label { font-weight: bold; margin-bottom: 5px; }
+        .token-value { font-family: monospace; word-break: break-all; background: white; padding: 8px; border-radius: 3px; }
+        .copy-btn { background: #007bff; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer; margin-left: 10px; }
+        .copy-btn:hover { background: #0056b3; }
+    </style>
+</head>
+<body>
+    {% if success %}
+        <h1 class="success">✅ OAuth授权成功！</h1>
+        <p>已成功获取 {{ driver_type }} 的访问令牌，请复制以下信息到你的主程序中：</p>
+        
+        {% if token_data.access_token %}
+        <div class="token-box">
+            <div class="token-label">Access Token:</div>
+            <div class="token-value" id="access_token">{{ token_data.access_token }}</div>
+            <button class="copy-btn" onclick="copyToClipboard('access_token')">复制</button>
+        </div>
+        {% endif %}
+        
+        {% if token_data.refresh_token %}
+        <div class="token-box">
+            <div class="token-label">Refresh Token:</div>
+            <div class="token-value" id="refresh_token">{{ token_data.refresh_token }}</div>
+            <button class="copy-btn" onclick="copyToClipboard('refresh_token')">复制</button>
+        </div>
+        {% endif %}
+        
+        {% if token_data.expires_in %}
+        <div class="token-box">
+            <div class="token-label">过期时间:</div>
+            <div class="token-value">{{ token_data.expires_in }} 秒</div>
+        </div>
+        {% endif %}
+        
+    {% else %}
+        <h1 class="error">❌ OAuth授权失败</h1>
+        <p>错误信息: {{ error }}</p>
+        <p>请返回重试或检查配置。</p>
+    {% endif %}
+    
+    <p><a href="/oauth">← 返回首页</a></p>
+    
+    <script>
+        function copyToClipboard(elementId) {
+            const element = document.getElementById(elementId);
+            const text = element.textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                alert('已复制到剪贴板！');
+            }).catch(err => {
+                console.error('复制失败:', err);
+            });
+        }
+    </script>
+</body>
+</html>
