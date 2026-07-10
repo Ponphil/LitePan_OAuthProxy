@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OAuth授权结果 - LitePan</title>
+    <style>
+        :root {
+            --accent: #416f9c;
+            --accent-dark: #315a82;
+            --soft: #e7f0f8;
+            --ink: #27313a;
+            --muted: #747c83;
+            --line: #dfe8ef;
+            --danger: #c85555;
+            --danger-soft: #faecec;
+            --card: rgba(255, 255, 255, 0.9);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+            color: var(--ink);
+            background: linear-gradient(180deg, #f7f9fc 0%, #eaf1f7 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+
+        .main-container {
+            width: min(620px, 100%);
+            background: var(--card);
+            border: 1px solid rgba(255, 255, 255, 0.75);
+            border-radius: 28px;
+            padding: 36px 42px 38px;
+            box-shadow: 0 24px 70px rgba(35, 45, 55, 0.08);
+            animation: slideIn 0.5s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(18px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 22px;
+        }
+
+        .status-icon {
+            width: 52px;
+            height: 52px;
+            margin: 0 auto 14px;
+            border-radius: 17px;
+            background: var(--soft);
+            display: grid;
+            place-items: center;
+            font-size: 28px;
+            font-weight: 800;
+            animation: celebrate 1.8s ease-in-out infinite;
+        }
+
+        @keyframes celebrate {
+            0%, 100% {
+                transform: translateY(0) rotate(0deg);
+            }
+            45% {
+                transform: translateY(-3px) rotate(-4deg);
+            }
+            70% {
+                transform: translateY(1px) rotate(3deg);
+            }
+        }
+
+        .status-icon.error {
+            background: var(--danger-soft);
+            color: var(--danger);
+            animation: none;
+        }
+
+        .status-title {
+            font-size: 22px;
+            line-height: 1.55;
+            letter-spacing: -0.02em;
+            margin-bottom: 0;
+        }
+
+        .status-title.success {
+            color: var(--ink);
+        }
+
+        .status-title.error {
+            color: var(--danger);
+        }
+
+        .status-description {
+            color: var(--muted);
+            font-size: 15px;
+            line-height: 1.7;
+            margin-bottom: 8px;
+        }
+
+        .status-description strong {
+            color: var(--ink);
+            font-weight: 800;
+        }
+
+        .token-container {
+            animation: fadeInUp 0.5s ease-out forwards;
+            opacity: 0;
+            transform: translateY(14px);
+        }
+
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .token-display {
+            background: #fff;
+            border: 1px solid var(--line);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 18px;
+        }
+
+        .token-label {
+            color: var(--accent);
+            font-size: 14px;
+            font-weight: 800;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .token-value {
+            background: transparent;
+            color: #3d4a54;
+            padding: 0;
+            border-radius: 0;
+            font-family: Consolas, Monaco, monospace;
+            font-size: 13px;
+            word-break: break-all;
+            line-height: 1.5;
+            border: none;
+            height: 72px;
+            overflow: hidden;
+            display: flex;
+            align-items: flex-start;
+        }
+
+        .token-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .copy-button {
+            height: 46px;
+            background: #fff;
+            color: var(--accent);
+            border: 1px solid var(--line);
+            padding: 0 18px;
+            border-radius: 15px;
+            font-size: 14px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-width: 146px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .copy-button:hover, .copy-button.active {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+
+        .copy-button.copied {
+            background: var(--accent-dark);
+            color: #fff;
+            border-color: var(--accent-dark);
+        }
+
+        .error-container {
+            background: var(--danger-soft);
+            border: 1px solid #f0d1d1;
+            border-radius: 18px;
+            padding: 20px;
+            margin-bottom: 8px;
+        }
+
+        .error-message {
+            color: #8a4444;
+            font-size: 15px;
+            line-height: 1.7;
+        }
+
+        .info-text {
+            color: var(--muted);
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        @media (max-width: 520px) {
+            .main-container {
+                padding: 30px 24px;
+                border-radius: 24px;
+            }
+            
+            .status-title {
+                font-size: 20px;
+            }
+            
+            .token-label {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .token-buttons {
+                flex-direction: column;
+            }
+            
+            .copy-button {
+                min-width: auto;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        {% if success %}
+            <div class="header">
+                <div class="status-icon">🎉</div>
+                <h1 class="status-title success">
+                    <strong>{{ driver_type }}</strong> 已成功取得令牌
+                </h1>
+            </div>
+            
+            <div class="token-container">
+                <div class="token-display">
+                    <div class="token-label">
+                        <span id="tokenTypeLabel">访问令牌</span>
+                        {% if token_data.expires_in %}
+                        <span class="info-text">{{ token_data.expires_in }} 秒后过期</span>
+                        {% endif %}
+                    </div>
+                    <div class="token-value" id="tokenValue">{{ token_data.access_token or '无可用令牌' }}</div>
+                </div>
+                
+                <div class="token-buttons">
+                    {% if token_data.access_token %}
+                    <button class="copy-button active" 
+                            onmouseover="showToken('access', '访问令牌', '{{ token_data.access_token }}')"
+                            onclick="copyToken('{{ token_data.access_token }}', this)">
+                        复制访问令牌
+                    </button>
+                    {% endif %}
+                    
+                    {% if token_data.refresh_token %}
+                    <button class="copy-button" 
+                            onmouseover="showToken('refresh', '刷新令牌', '{{ token_data.refresh_token }}')"
+                            onclick="copyToken('{{ token_data.refresh_token }}', this)">
+                        复制刷新令牌
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+            
+        {% else %}
+            <div class="header">
+                <div class="status-icon error">×</div>
+                <h1 class="status-title error">OAuth 认证失败</h1>
+                <p class="status-description">
+                    认证过程中发生了错误，请重试或检查配置
+                </p>
+            </div>
+            
+            <div class="error-container">
+                <div class="error-message">
+                    <strong>错误详情：</strong><br>
+                    {{ error }}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <script>
+        let currentTokenType = 'access';
+        
+        function showToken(type, label, tokenValue) {
+            document.getElementById('tokenTypeLabel').textContent = label;
+            document.getElementById('tokenValue').textContent = tokenValue;
+            
+            const buttons = document.querySelectorAll('.copy-button');
+            buttons.forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            currentTokenType = type;
+        }
+        
+        function copyToken(tokenValue, buttonElement) {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(tokenValue).then(() => {
+                    showCopySuccess(buttonElement);
+                }).catch(err => {
+                    console.error('复制失败:', err);
+                    fallbackCopyTextToClipboard(tokenValue, buttonElement);
+                });
+            } else {
+                fallbackCopyTextToClipboard(tokenValue, buttonElement);
+            }
+        }
+        
+        function fallbackCopyTextToClipboard(text, buttonElement) {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.top = "0";
+            textArea.style.left = "0";
+            textArea.style.position = "fixed";
+            
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    showCopySuccess(buttonElement);
+                } else {
+                    showCopyError(buttonElement);
+                }
+            } catch (err) {
+                console.error('Fallback: 复制失败', err);
+                showCopyError(buttonElement);
+            }
+            
+            document.body.removeChild(textArea);
+        }
+        
+        function showCopySuccess(buttonElement) {
+            const originalText = buttonElement.innerHTML;
+            buttonElement.innerHTML = '已复制';
+            buttonElement.classList.add('copied');
+            
+            setTimeout(() => {
+                buttonElement.innerHTML = originalText;
+                buttonElement.classList.remove('copied');
+            }, 2000);
+        }
+        
+        function showCopyError(buttonElement) {
+            const originalText = buttonElement.innerHTML;
+            buttonElement.innerHTML = '复制失败';
+            buttonElement.style.background = '#c85555';
+            buttonElement.style.borderColor = '#c85555';
+            buttonElement.style.color = '#fff';
+            
+            setTimeout(() => {
+                buttonElement.innerHTML = originalText;
+                buttonElement.style.background = '';
+                buttonElement.style.borderColor = '';
+                buttonElement.style.color = '';
+            }, 2000);
+        }
+    </script>
+</body>
+</html>
