@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录 · LitePan OAuth 统计</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+            background: #f4f7fa;
+            color: #27313a;
+            padding: 20px;
+        }
+        .login-card {
+            width: 100%;
+            max-width: 360px;
+            background: #fff;
+            border: 1px solid #e2e9f0;
+            border-radius: 16px;
+            padding: 32px 28px;
+            box-shadow: 0 12px 40px rgba(35, 45, 55, 0.08);
+        }
+        .login-card h1 { font-size: 18px; margin-bottom: 6px; }
+        .login-card .desc { font-size: 13px; color: #747c83; margin-bottom: 22px; }
+        .login-card label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 8px; }
+        .login-card input[type="password"] {
+            width: 100%;
+            padding: 11px 14px;
+            border: 1px solid #e2e9f0;
+            border-radius: 10px;
+            font-size: 15px;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+        .login-card input[type="password"]:focus { border-color: #416f9c; }
+        .login-card button {
+            width: 100%;
+            margin-top: 16px;
+            padding: 11px;
+            border: none;
+            border-radius: 10px;
+            background: #416f9c;
+            color: #fff;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .login-card button:hover { background: #355e86; }
+        .error {
+            margin-top: 14px;
+            padding: 9px 12px;
+            border-radius: 8px;
+            background: #fdecec;
+            color: #b42318;
+            font-size: 13px;
+        }
+        .hint {
+            margin-top: 14px;
+            padding: 9px 12px;
+            border-radius: 8px;
+            background: #fff7e6;
+            color: #8a5b00;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+<form class="login-card" method="post" action="/stats/login">
+    <h1>OAuth 调用统计</h1>
+    <p class="desc">输入统计口令即可查看</p>
+    <label for="password">密码</label>
+    <input type="password" id="password" name="password" placeholder="请输入统计口令" autofocus autocomplete="current-password">
+    <button type="submit">进入统计</button>
+    {% if error %}
+    <div class="error">{{ error }}</div>
+    {% endif %}
+    {% if using_default_password %}
+    <div class="hint">当前使用初始密码 <code>000000</code>，请尽快在 <code>.env</code> 中设置 <code>STATS_PASSWORD</code>。</div>
+    {% endif %}
+</form>
+</body>
+</html>

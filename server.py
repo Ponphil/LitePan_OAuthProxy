@@ -8,7 +8,10 @@ import uuid
 import json
 import base64
 import os
-from datetime import datetime, timedelta
+import secrets
+import hmac
+import hashlib
+from datetime import datetime, timedelta, date
 from drivers import get_oauth_driver
 from config import OAuthConfig
 from drivers.guangyapan import GuangYaPanAuthDriver
@@ -26,6 +29,120 @@ GUANGYAPAN_DRIVER_TYPES = {"光鸭云盘", "GuangYaPan", "guangyapan"}
 
 def get_external_base_url(request: Request) -> str:
     return os.getenv("EXTERNAL_URL", str(request.base_url).rstrip("/")).rstrip("/")
+
+
+# === 统计鉴权与展示辅助 ===
+
+DRIVER_DISPLAY_NAMES = {
+    "115": "115网盘Open",
+    "baidu": "百度网盘Open",
+    "123": "123云盘Open",
+    "onedrive": "OneDrive",
+    "guangyapan": "光鸭云盘",
+    "xunlei": "迅雷云盘",
+}
+
+ACTION_LABELS = {
+    "authorize": "发起授权",
+    "token_exchange": "换取 Token",
+    "refresh": "刷新 Token",
+    "send_sms": "发送短信",
+}
+
+ACTION_COLORS = {
+    "authorize": "blue",
+    "token_exchange": "green",
+    "refresh": "orange",
+    "send_sms": "purple",
+}
+
+STATS_COOKIE_NAME = "stats_session"
+
+
+def stats_password() -> str:
+    """统计访问口令：STATS_PASSWORD 优先，未配置时默认 000000（请尽快改成复杂密码）。"""
+    return os.getenv("STATS_PASSWORD", "").strip() or "000000"
+
+
+def check_stats_token(value: str) -> bool:
+    expected = stats_password()
+    return bool(expected and secrets.compare_digest(value, expected))
+
+
+def verify_stats_request(request: Request) -> bool:
+    """统计接口鉴权：支持登录 Cookie / Basic / Bearer / ?token= 四种方式。"""
+    cookie = request.cookies.get(STATS_COOKIE_NAME, "")
+    if cookie and verify_stats_cookie(cookie):
+        return True
+    token = request.query_params.get("token", "")
+    if token and check_stats_token(token):
+        return True
+    auth = request.headers.get("Authorization", "")
+    if auth.lower().startswith("basic "):
+        try:
+            decoded = base64.b64decode(auth.split(" ", 1)[1]).decode("utf-8")
+        except Exception:
+            return False
+        _, _, pw = decoded.partition(":")
+        return check_stats_token(pw)
+    if auth.lower().startswith("bearer "):
+        return check_stats_token(auth.split(" ", 1)[1].strip())
+    return False
+
+
+def _stats_cookie_secret() -> str:
+    return os.getenv("STATS_SECRET", "").strip() or stats_password()
+
+
+def make_stats_cookie() -> str:
+    payload = secrets.token_hex(16)
+    sig = hmac.new(_stats_cookie_secret().encode(), payload.encode(), hashlib.sha256).hexdigest()
+    return f"{payload}.{sig}"
+
+
+def verify_stats_cookie(value: str) -> bool:
+    try:
+        payload, sig = value.rsplit(".", 1)
+    except (ValueError, AttributeError):
+        return False
+    expected = hmac.new(_stats_cookie_secret().encode(), payload.encode(), hashlib.sha256).hexdigest()
+    return secrets.compare_digest(sig, expected)
+
+
+def require_stats_auth(request: Request):
+    if not verify_stats_request(request):
+        raise HTTPException(
+            status_code=401,
+            detail="需要统计访问口令（Basic / Bearer / ?token=）",
+            headers={"WWW-Authenticate": 'Basic realm="oauth-stats"'},
+        )
+
+
+def _aggregate_window(daily: Dict[str, Dict[str, Dict[str, int]]]) -> Dict[str, Dict[str, int]]:
+    """把筛选窗口内的每日明细聚合为 {driver: {action: count}}。"""
+    agg: Dict[str, Dict[str, int]] = {}
+    for day_drivers in daily.values():
+        for driver, actions in day_drivers.items():
+            a = agg.setdefault(driver, {})
+            for action, count in actions.items():
+                a[action] = a.get(action, 0) + count
+    return agg
+
+
+def _sum_counts(mapping: Dict[str, Dict[str, int]]) -> int:
+    return sum(sum(actions.values()) for actions in mapping.values())
+
+
+def _driver_name(key: str) -> str:
+    return DRIVER_DISPLAY_NAMES.get(key, key)
+
+
+def _action_label(action: str) -> str:
+    return ACTION_LABELS.get(action, action)
+
+
+def using_default_stats_password() -> bool:
+    return not os.getenv("STATS_PASSWORD", "").strip() and stats_password() == "000000"
 
 
 def is_guangyapan_driver(driver_type: str) -> bool:
@@ -900,9 +1017,18 @@ async def quick_start_oauth(request: Request,
 # === 统计 API ===
 
 @router.get("/api/stats")
-async def get_stats(days: int = 0):
-    """查看各驱动/操作调用次数统计。days=0 返回全部累计，days>0 仅返回最近 N 天。"""
+async def get_stats(request: Request, days: int = 0):
+    """查看各驱动/操作调用次数统计（需口令）。days=0 返回全部累计，days>0 仅返回最近 N 天。"""
+    require_stats_auth(request)
     data = stats.snapshot(days=None if days <= 0 else days)
+    window = _aggregate_window(data.get("daily", {}))
+    cumulative = data.get("drivers", {})
+    data["totals"] = {
+        "window_total": _sum_counts(window),
+        "cumulative_total": _sum_counts(cumulative),
+        "drivers": window,
+        "cumulative_drivers": cumulative,
+    }
     return JSONResponse(content={
         "success": True,
         "data": data,
@@ -910,14 +1036,9 @@ async def get_stats(days: int = 0):
 
 
 @router.post("/api/stats/reset")
-async def reset_stats(token: str = ""):
-    """重置调用统计。需在 .env 中设 STATS_RESET_TOKEN 并在请求时携带 ?token=xxx。"""
-    expected = os.getenv("STATS_RESET_TOKEN", "").strip()
-    if not expected or token != expected:
-        return JSONResponse(
-            status_code=403,
-            content={"success": False, "message": "token 无效或未配置 STATS_RESET_TOKEN"},
-        )
+async def reset_stats(request: Request):
+    """重置调用统计（需统计口令）。"""
+    require_stats_auth(request)
     stats.reset()
     return JSONResponse(content={
         "success": True,
@@ -927,24 +1048,103 @@ async def reset_stats(token: str = ""):
 
 @router.get("/stats", response_class=HTMLResponse)
 async def stats_page(request: Request, days: int = 7):
-    """调用统计页面。"""
+    """调用统计页面：未登录显示密码登录页，登录成功后写入 Cookie。"""
+    if not verify_stats_request(request):
+        return templates.TemplateResponse(request=request, name="stats_login.html", context={
+            "request": request,
+            "error": "",
+            "using_default_password": using_default_stats_password(),
+        })
     data = stats.snapshot(days=None if days <= 0 else days)
     daily = data.get("daily", {})
-    # 概览按当前筛选周期从每日明细现算汇总，避免数字与时间筛选脱节
-    drivers = {}
+    cumulative = data.get("drivers", {})
+    window = _aggregate_window(daily)
+
     peak_daily = {}
     for day_drivers in daily.values():
         for driver, actions in day_drivers.items():
-            agg = drivers.setdefault(driver, {})
             for action, count in actions.items():
-                agg[action] = agg.get(action, 0) + count
                 key = f"{driver}|{action}"
                 peak_daily[key] = max(peak_daily.get(key, 0), count)
-    return templates.TemplateResponse(request=request, name="stats.html", context={
+
+    today = date.today().isoformat()
+    summary = {
+        "window_total": _sum_counts(window),
+        "today_total": _sum_counts(daily.get(today, {})),
+        "days_count": len(daily),
+        "cumulative_total": _sum_counts(cumulative),
+    }
+
+    cards = []
+    for driver, actions in window.items():
+        max_action = max(actions.values(), default=0)
+        rows = []
+        for action, count in actions.items():
+            rows.append({
+                "key": action,
+                "label": _action_label(action),
+                "count": count,
+                "peak": peak_daily.get(f"{driver}|{action}", 0),
+                "width": round(count / max_action * 100) if max_action else 0,
+                "color": ACTION_COLORS.get(action, "neutral"),
+            })
+        rows.sort(key=lambda r: r["count"], reverse=True)
+        cards.append({
+            "key": driver,
+            "name": _driver_name(driver),
+            "total": sum(r["count"] for r in rows),
+            "actions": rows,
+        })
+    cards.sort(key=lambda c: c["total"], reverse=True)
+
+    # 每日总调用趋势（展示最近 90 天）
+    trend = []
+    for day in sorted(daily.keys()):
+        trend.append({"date": day, "total": _sum_counts(daily[day])})
+    trend = trend[-90:]
+    trend_max = max((t["total"] for t in trend), default=0)
+    for t in trend:
+        t["width"] = round(t["total"] / trend_max * 100) if trend_max else 0
+        t["is_today"] = t["date"] == today
+
+    # 每日明细表同样限制展示最近 90 天，避免“全部”时页面过长
+    sorted_days = sorted(daily.keys())
+    if len(sorted_days) > 90:
+        daily = {k: daily[k] for k in sorted_days[-90:]}
+
+    response = templates.TemplateResponse(request=request, name="stats.html", context={
         "request": request,
-        "drivers": drivers,
+        "summary": summary,
+        "cards": cards,
+        "trend": trend,
+        "trend_max": trend_max,
         "daily": daily,
-        "peak_daily": peak_daily,
         "updated_at": data.get("updated_at", ""),
         "days": days,
+        "using_default_password": using_default_stats_password(),
     })
+    response.set_cookie(STATS_COOKIE_NAME, make_stats_cookie(), max_age=7 * 24 * 3600,
+                        httponly=True, samesite="lax")
+    return response
+
+
+@router.post("/stats/login", response_class=HTMLResponse)
+async def stats_login(request: Request, password: str = Form("")):
+    """统计页密码登录：只校验密码，不区分用户名。"""
+    if check_stats_token(password):
+        resp = RedirectResponse(url="/stats", status_code=303)
+        resp.set_cookie(STATS_COOKIE_NAME, make_stats_cookie(), max_age=7 * 24 * 3600,
+                        httponly=True, samesite="lax")
+        return resp
+    return templates.TemplateResponse(request=request, name="stats_login.html", context={
+        "request": request,
+        "error": "密码不正确",
+        "using_default_password": using_default_stats_password(),
+    })
+
+
+@router.post("/stats/logout")
+async def stats_logout():
+    resp = RedirectResponse(url="/stats", status_code=303)
+    resp.delete_cookie(STATS_COOKIE_NAME)
+    return resp

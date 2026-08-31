@@ -23,7 +23,7 @@ class OAuthConfig:
             },
         }
 
-    def get_supported_drivers(self) -> List[Dict[str, str]]:
+    def get_supported_drivers(self) -> List[Dict[str, object]]:
         """获取支持的驱动列表"""
         return [
             {
@@ -70,6 +70,9 @@ class OAuthConfig:
             f"builtin_{driver_name}_client_id": self.builtin_credentials.get(driver_name, {}).get("client_id"),
             f"builtin_{driver_name}_client_secret": self.builtin_credentials.get(driver_name, {}).get("client_secret")
         }
+        project_id = self.builtin_credentials.get(driver_name, {}).get("project_id")
+        if project_id is not None:
+            config[f"builtin_{driver_name}_project_id"] = project_id
         scope = self.builtin_credentials.get(driver_name, {}).get("scope")
         if scope is not None:
             config[f"builtin_{driver_name}_scope"] = scope

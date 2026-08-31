@@ -7,54 +7,78 @@
     <style>
         :root {
             --accent: #416f9c;
-            --soft: #e7f0f8;
             --ink: #27313a;
             --muted: #747c83;
-            --line: #dfe8ef;
-            --card: rgba(255, 255, 255, 0.9);
+            --line: #e2e9f0;
+            --card: #ffffff;
+            --bg: #f4f7fa;
             --green: #2da44e;
-            --orange: #bf7e29;
+            --orange: #c07f28;
             --blue: #3b6ea2;
             --purple: #7c5aa6;
+            --neutral: #8a939c;
+            --red: #d64541;
         }
-
         * { margin: 0; padding: 0; box-sizing: border-box; }
-
         body {
             min-height: 100vh;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
             color: var(--ink);
-            background: linear-gradient(180deg, #f7f9fc 0%, #eaf1f7 100%);
-            padding: 24px;
+            background: var(--bg);
+            padding: 28px 20px 48px;
         }
+        .container { max-width: 1080px; margin: 0 auto; }
 
-        .container { max-width: 800px; margin: 0 auto; }
-
-        .header {
-            text-align: center;
-            margin: 32px 0 28px;
-        }
-        .header h1 {
-            font-size: 26px;
-            letter-spacing: -0.03em;
-            margin-bottom: 6px;
-        }
-        .header .updated {
-            color: var(--muted);
+        .header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
+        .header .title { display: flex; align-items: baseline; gap: 12px; }
+        .header h1 { font-size: 22px; letter-spacing: -0.02em; }
+        .header .updated { color: var(--muted); font-size: 13px; }
+        .header .actions { display: flex; gap: 8px; }
+        .btn {
+            border: 1px solid var(--line);
+            background: var(--card);
+            color: var(--ink);
+            border-radius: 10px;
+            padding: 7px 14px;
             font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn:hover { border-color: var(--accent); color: var(--accent); }
+        .btn.danger { color: var(--red); border-color: #f0c4c2; }
+        .btn.danger:hover { border-color: var(--red); color: var(--red); }
+
+        .banner {
+            background: #fff7e6;
+            border: 1px solid #f0d9a8;
+            color: #8a5b00;
+            border-radius: 12px;
+            padding: 10px 16px;
+            font-size: 13px;
+            margin-bottom: 18px;
         }
 
-        .filter-bar {
-            display: flex;
-            gap: 8px;
-            justify-content: center;
-            margin-bottom: 28px;
-            flex-wrap: wrap;
+        .tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+        .tabs .tab {
+            border: 1px solid var(--line);
+            background: var(--card);
+            color: var(--muted);
+            border-radius: 10px;
+            padding: 8px 16px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
         }
+        .tabs .tab.active, .tabs .tab:hover { color: #fff; background: var(--accent); border-color: var(--accent); }
+
+        .filter-bar { display: flex; gap: 8px; margin-bottom: 22px; flex-wrap: wrap; }
         .filter-bar a {
             text-decoration: none;
-            padding: 8px 18px;
-            border-radius: 12px;
+            padding: 7px 16px;
+            border-radius: 10px;
             font-size: 13px;
             font-weight: 600;
             color: var(--muted);
@@ -62,76 +86,103 @@
             border: 1px solid var(--line);
             transition: all 0.15s;
         }
-        .filter-bar a.active, .filter-bar a:hover {
-            color: #fff;
-            background: var(--accent);
-            border-color: var(--accent);
-        }
+        .filter-bar a.active, .filter-bar a:hover { color: #fff; background: var(--accent); border-color: var(--accent); }
 
-        .driver-card {
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 14px;
+            margin-bottom: 22px;
+        }
+        .summary-card {
             background: var(--card);
-            border: 1px solid rgba(255,255,255,0.75);
-            border-radius: 20px;
-            padding: 28px 32px;
-            margin-bottom: 20px;
-            box-shadow: 0 12px 40px rgba(35,45,55,0.06);
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            padding: 16px 18px;
         }
+        .summary-card .label { font-size: 12px; color: var(--muted); font-weight: 600; }
+        .summary-card .value { font-size: 26px; font-weight: 800; letter-spacing: -0.03em; margin-top: 4px; }
+        .summary-card .sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
 
-        .driver-name {
-            font-size: 18px;
-            font-weight: 700;
-            margin-bottom: 20px;
-            color: var(--accent);
+        .card {
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            padding: 22px 24px;
+            margin-bottom: 18px;
         }
+        .card h2 { font-size: 15px; font-weight: 700; margin-bottom: 14px; color: var(--ink); }
+        .card h2 .hint { font-weight: 500; color: var(--muted); font-size: 12px; margin-left: 8px; }
 
-        .section-label {
-            font-size: 12px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
+        .trend { display: flex; align-items: flex-end; gap: 4px; height: 110px; }
+        .trend .bar-wrap { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; height: 100%; }
+        .trend .bar {
+            background: var(--accent);
+            border-radius: 4px 4px 0 0;
+            min-height: 2px;
+            opacity: 0.85;
+            transition: opacity 0.15s;
+        }
+        .trend .bar-wrap:hover .bar { opacity: 1; }
+        .trend .bar-wrap.today .bar { background: var(--green); }
+        .trend .bar-wrap .day {
+            font-size: 10px;
             color: var(--muted);
-            margin-bottom: 10px;
+            text-align: center;
+            margin-top: 5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
+        .trend-labels { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-top: 4px; }
 
-        .action-row {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 10px 0;
-            border-bottom: 1px solid #f0f4f8;
-        }
-        .action-row:last-child { border-bottom: none; }
-
-        .action-label {
-            flex: 1;
-            font-size: 14px;
+        .overview-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .overview-table th {
+            text-align: left;
+            color: var(--muted);
             font-weight: 600;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            padding: 8px;
+            border-bottom: 2px solid var(--line);
         }
-        .action-total {
-            font-size: 24px;
-            font-weight: 800;
-            letter-spacing: -0.03em;
-            min-width: 48px;
-            text-align: right;
+        .overview-table th:not(:first-child), .overview-table td:not(:first-child) { text-align: right; }
+        .overview-table td {
+            padding: 8px;
+            border-bottom: 1px solid #f2f5f8;
+            font-variant-numeric: tabular-nums;
         }
-        .action-peak {
-            font-size: 12px;
-            color: var(--muted);
-            min-width: 80px;
-            text-align: right;
-        }
+        .overview-table .name { font-weight: 600; }
+        .overview-table .bar-cell { width: 40%; }
+        .overview-table .bar { height: 8px; border-radius: 99px; background: #eef2f6; overflow: hidden; }
+        .overview-table .bar i { display: block; height: 100%; border-radius: 99px; background: var(--accent); }
 
-        .action-total.authorize { color: var(--blue); }
-        .action-total.token_exchange { color: var(--green); }
-        .action-total.refresh { color: var(--orange); }
-        .action-total.send_sms { color: var(--purple); }
+        .driver-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+        .driver-head .name { font-size: 17px; font-weight: 800; color: var(--accent); }
+        .driver-head .total { font-size: 14px; color: var(--muted); }
+        .driver-head .total b { font-size: 20px; color: var(--ink); }
 
-        .daily-section { margin-top: 20px; }
-        .daily-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 13px;
-        }
+        .action-row { display: flex; align-items: center; gap: 14px; padding: 10px 0; border-bottom: 1px solid #f0f4f8; }
+        .action-row:last-child { border-bottom: none; }
+        .action-label { flex: 0 0 130px; font-size: 14px; font-weight: 600; }
+        .action-bar { flex: 1; height: 8px; border-radius: 99px; background: #eef2f6; overflow: hidden; }
+        .action-bar i { display: block; height: 100%; border-radius: 99px; background: var(--neutral); }
+        .action-bar i.blue { background: var(--blue); }
+        .action-bar i.green { background: var(--green); }
+        .action-bar i.orange { background: var(--orange); }
+        .action-bar i.purple { background: var(--purple); }
+        .action-count { flex: 0 0 56px; font-size: 20px; font-weight: 800; text-align: right; letter-spacing: -0.02em; }
+        .action-count.blue { color: var(--blue); }
+        .action-count.green { color: var(--green); }
+        .action-count.orange { color: var(--orange); }
+        .action-count.purple { color: var(--purple); }
+        .action-peak { flex: 0 0 92px; font-size: 12px; color: var(--muted); text-align: right; }
+
+        .daily-table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: 14px; }
         .daily-table th {
             text-align: right;
             color: var(--muted);
@@ -141,28 +192,46 @@
             letter-spacing: 0.04em;
             padding: 6px 8px;
             border-bottom: 2px solid var(--line);
+            white-space: nowrap;
         }
         .daily-table th:first-child { text-align: left; }
         .daily-table td {
             padding: 6px 8px;
-            border-bottom: 1px solid #f0f4f8;
+            border-bottom: 1px solid #f2f5f8;
             text-align: right;
+            font-variant-numeric: tabular-nums;
         }
-        .daily-table td:first-child { text-align: left; font-weight: 500; }
+        .daily-table td:first-child { text-align: left; font-weight: 500; color: var(--muted); }
+        .daily-table tr.today td { background: #f4f9ff; }
 
-        .empty {
-            text-align: center;
-            color: var(--muted);
-            padding: 60px 0;
-            font-size: 15px;
-        }
+        .empty { text-align: center; color: var(--muted); padding: 80px 0; font-size: 15px; }
+        .footer { text-align: center; color: var(--muted); font-size: 12px; margin-top: 26px; }
     </style>
 </head>
 <body>
 <div class="container">
     <div class="header">
-        <h1>OAuth 调用统计</h1>
-        <p class="updated">更新于 {{ updated_at }}</p>
+        <div class="title">
+            <h1>OAuth 调用统计</h1>
+            <span class="updated">更新于 {{ updated_at }}</span>
+        </div>
+        <div class="actions">
+            <button class="btn danger" onclick="resetStats()">重置统计</button>
+            <form method="post" action="/stats/logout" style="display:inline">
+                <button type="submit" class="btn">退出</button>
+            </form>
+        </div>
+    </div>
+
+    {% if using_default_password %}
+    <div class="banner">⚠️ 当前使用初始密码 <code>000000</code>，请尽快在 <code>.env</code> 中设置 <code>STATS_PASSWORD</code> 改为复杂密码。</div>
+    {% endif %}
+
+    <div class="tabs">
+        <button class="tab active" data-tab="overview">总览</button>
+        {% for card in cards %}
+        <button class="tab" data-tab="{{ card.key }}">{{ card.name }}</button>
+        {% endfor %}
     </div>
 
     <div class="filter-bar">
@@ -173,58 +242,60 @@
         <a href="?days=0" {% if days == 0 %}class="active"{% endif %}>全部</a>
     </div>
 
-    {% if drivers %}
-    {% for driver_name, actions in drivers.items() %}
-    <div class="driver-card">
-        <div class="driver-name">{{ driver_name }}</div>
-
-        <div class="section-label">概览（{{ days if days > 0 else "累计" }}）</div>
-        {% set peak_prefix = driver_name + "|" %}
-        {% for action, count in actions.items() %}
-        {% set peak_key = peak_prefix + action %}
-        <div class="action-row">
-            <span class="action-label">
-                {% if action == "authorize" %}认证页
-                {% elif action == "token_exchange" %}换取 Token
-                {% elif action == "refresh" %}刷新 Token
-                {% elif action == "send_sms" %}发送短信
-                {% else %}{{ action }}
-                {% endif %}
-            </span>
-            <span class="action-total {{ action }}">{{ count }}</span>
-            <span class="action-peak">
-                日峰值 {{ peak_daily.get(peak_key, 0) }}
-            </span>
+    {% if summary.window_total > 0 or summary.cumulative_total > 0 %}
+    <div class="tab-panel active" id="panel-overview">
+        <div class="summary-grid">
+            <div class="summary-card">
+                <div class="label">窗口合计</div>
+                <div class="value">{{ summary.window_total }}</div>
+                <div class="sub">{{ "全部累计" if days == 0 else "所选时间范围内" }}</div>
+            </div>
+            <div class="summary-card">
+                <div class="label">今日</div>
+                <div class="value">{{ summary.today_total }}</div>
+                <div class="sub">{{ trend[-1].date if trend else "—" }}</div>
+            </div>
+            <div class="summary-card">
+                <div class="label">覆盖天数</div>
+                <div class="value">{{ summary.days_count }}</div>
+                <div class="sub">有调用记录的天数</div>
+            </div>
+            <div class="summary-card">
+                <div class="label">累计总调用</div>
+                <div class="value">{{ summary.cumulative_total }}</div>
+                <div class="sub">自记录以来全部</div>
+            </div>
         </div>
-        {% endfor %}
 
-        {% if daily %}
-        <div class="daily-section">
-            <div class="section-label">每日明细</div>
-            <table class="daily-table">
+        {% if trend %}
+        <div class="card">
+            <h2>每日调用趋势<span class="hint">最近 90 天 · 绿色为今天</span></h2>
+            <div class="trend">
+                {% for t in trend %}
+                <div class="bar-wrap {{ 'today' if t.is_today }}" title="{{ t.date }}：{{ t.total }} 次">
+                    <div class="bar" style="height: {{ t.width if t.width > 0 else 2 }}%"></div>
+                    <div class="day">{{ t.date[5:] }}</div>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="trend-labels"><span>{{ trend[0].date }}</span><span>{{ trend[-1].date }}</span></div>
+        </div>
+        {% endif %}
+
+        {% if cards %}
+        <div class="card">
+            <h2>各驱动汇总<span class="hint">窗口内调用量</span></h2>
+            {% set max_total = cards[0].total %}
+            <table class="overview-table">
                 <thead>
-                    <tr>
-                        <th>日期</th>
-                        {% for action in actions.keys() %}
-                        <th>
-                            {% if action == "authorize" %}认证
-                            {% elif action == "token_exchange" %}Token
-                            {% elif action == "refresh" %}刷新
-                            {% elif action == "send_sms" %}短信
-                            {% else %}{{ action }}
-                            {% endif %}
-                        </th>
-                        {% endfor %}
-                    </tr>
+                    <tr><th>驱动</th><th>窗口合计</th><th class="bar-cell"></th></tr>
                 </thead>
                 <tbody>
-                    {% for day in daily|sort(reverse=true) %}
+                    {% for card in cards %}
                     <tr>
-                        <td>{{ day }}</td>
-                        {% set day_driver = daily[day].get(driver_name, {}) %}
-                        {% for action in actions.keys() %}
-                        <td>{{ day_driver.get(action, 0) if day_driver.get(action, 0) > 0 else "-" }}</td>
-                        {% endfor %}
+                        <td class="name">{{ card.name }}</td>
+                        <td>{{ card.total }}</td>
+                        <td class="bar-cell"><div class="bar"><i style="width: {{ (card.total / max_total * 100)|round|int if max_total else 0 }}%"></i></div></td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -232,11 +303,80 @@
         </div>
         {% endif %}
     </div>
+
+    {% for card in cards %}
+    <div class="tab-panel" id="panel-{{ card.key }}">
+        <div class="card">
+            <div class="driver-head">
+                <div class="name">{{ card.name }}</div>
+                <div class="total">窗口内 <b>{{ card.total }}</b> 次</div>
+            </div>
+            {% for a in card.actions %}
+            <div class="action-row">
+                <span class="action-label">{{ a.label }}</span>
+                <span class="action-bar"><i class="{{ a.color }}" style="width: {{ a.width }}%"></i></span>
+                <span class="action-count {{ a.color }}">{{ a.count }}</span>
+                <span class="action-peak">日峰值 {{ a.peak }}</span>
+            </div>
+            {% endfor %}
+
+            {% if daily %}
+            <table class="daily-table">
+                <thead>
+                    <tr>
+                        <th>日期</th>
+                        {% for a in card.actions %}
+                        <th>{{ a.label }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for day in daily|sort(reverse=true) %}
+                    <tr class="{{ 'today' if day == trend[-1].date and trend }}">
+                        <td>{{ day }}</td>
+                        {% set day_driver = daily[day].get(card.key, {}) %}
+                        {% for a in card.actions %}
+                        <td>{{ day_driver.get(a.key, 0) if day_driver.get(a.key, 0) > 0 else "-" }}</td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% endif %}
+        </div>
+    </div>
     {% endfor %}
+
     {% else %}
-    <div class="empty">暂无调用记录</div>
+    <div class="tab-panel active" id="panel-overview">
+        <div class="card"><div class="empty">暂无调用记录</div></div>
+    </div>
     {% endif %}
 
+    <div class="footer">数据存于本机 oauth_stats.json，仅供评估各平台 API 配额使用</div>
 </div>
+
+<script>
+document.querySelectorAll(".tabs .tab").forEach(function (tab) {
+    tab.addEventListener("click", function () {
+        document.querySelectorAll(".tabs .tab").forEach(function (t) { t.classList.remove("active"); });
+        document.querySelectorAll(".tab-panel").forEach(function (p) { p.classList.remove("active"); });
+        tab.classList.add("active");
+        var panel = document.getElementById("panel-" + tab.dataset.tab);
+        if (panel) panel.classList.add("active");
+    });
+});
+
+function resetStats() {
+    if (!confirm("确定重置全部调用统计？此操作不可恢复。")) return;
+    fetch("/api/stats/reset", { method: "POST" })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+            if (d.success) { location.reload(); }
+            else { alert(d.message || "重置失败"); }
+        })
+        .catch(function () { alert("重置失败，请确认已登录"); });
+}
+</script>
 </body>
 </html>
